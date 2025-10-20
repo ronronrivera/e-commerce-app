@@ -1,6 +1,7 @@
 import Product from "../models/product.model.js";
 import { redis } from "../lib/redis.js";
 import cloudinary from "../lib/cloudinary.js";
+import {updateFeatureProductCached} from "../lib/utils.js"
 
 export const getAllProducts  = async (_, res) =>{
 	try{
@@ -9,11 +10,11 @@ export const getAllProducts  = async (_, res) =>{
 	}	
 	catch(error){
 		console.log("Error in getAllProducts controller", error.message);
-		res.status("Internal server error: ", error.message);
+		res.status(500).json({message: "Internal server error: ", error: error.message});
 	}
 }
 
-export const geatFeaturedProducts = async (_, res) =>{
+export const getFeaturedProducts = async (_, res) =>{
 	try{
 		let featuredProducts = await redis.get("featured_products");
 		if(featuredProducts){
@@ -26,7 +27,7 @@ export const geatFeaturedProducts = async (_, res) =>{
 		featuredProducts = await Product.find({isFeatured: true}).lean();
 
 		if(!featuredProducts) return res.status(404).json({message: "No featured products found"});
-		
+		if(!featuredProducts.length) return res.status(404).json({message: "No featured products found"});
 		//store in redis for future quick access
 
 		await redis.set("featured_products", JSON.stringify(featuredProducts))
