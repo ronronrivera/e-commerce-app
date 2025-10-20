@@ -10,7 +10,7 @@ router.post("/logout", logout);
 
 router.post("/refresh-token", refreshToken);
 
-//router.get("/profile", getProfile);
+//router.get("/profile", protectedRoute,getProfile);
 
 
 export default router;
