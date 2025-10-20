@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { redis } from "../lib/redis.js";
+import Product from "../models/product.model.js";
 
 export const generateToken = (userId) =>{
 	const accessToken = jwt.sign({userId}, process.env.ACCESS_TOKEN_SECRET,{
@@ -35,3 +36,15 @@ export const setCookies = (res, accessToken, refreshToken) =>{
 	})
 }
 
+export const updateFeatureProductCached = async () =>{
+	try{
+		 //lean() is gonna return a plain javascript object instead of a mongodb document
+		 //which is good performance
+		const featuredProducts = await Product.find({isFeatured: true}).lean();
+		await redis.set("featured_products", JSON.stringify(featuredProducts));
+
+	}
+	catch(error){
+		console.log("Error in updateFeatureProductCached function", error.message);
+	}
+}
