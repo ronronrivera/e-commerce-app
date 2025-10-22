@@ -1,5 +1,4 @@
-import { getAnalyticsData } from "../lib/utils.js";
-import {getDailySalesData} from "../lib/utils.js";
+import { getAnalyticsData, getDailySalesData } from "../lib/utils.js";
 
 
 export const analyticsController = async (_, res) =>{

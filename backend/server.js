@@ -25,9 +25,11 @@ app.use("/api/coupons", couponsRoutes)
 app.use("/api/payments", paymentRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
-app.listen(PORT, () =>{
-	console.log(`Server is running on http://localhost:${PORT}/`)
-	connectDB();
-})
-
-
+connectDB().then(() =>{
+	app.listen(PORT, () =>{
+		console.log(`Server is running on http://localhost:${PORT}/`)
+	});
+}).catch((error) =>{
+	console.error("Failed to connect to the database: ", error);
+	process.exit(1);
+});
