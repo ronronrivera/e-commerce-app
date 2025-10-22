@@ -111,5 +111,13 @@ export const refreshToken = async (req, res) =>{
 	}
 }
 
-//TODO!: implement protected route and profile route controller
+export const getProfile = async (req, res) =>{
+	try{
+		res.json(req.user);
+	}
+	catch(error){
+		console.log("Error in getProfile contoller: ", error.message);
+		res.status(500).json({message: "Internal server error", error: error.message});
+	}
+}
 
