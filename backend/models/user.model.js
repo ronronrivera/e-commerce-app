@@ -8,15 +8,15 @@ const userSchema = new mongoose.Schema({
 	},
 	email: {
 		type: String,
-		required: [true, "Email is required"],
+		required: true,
 		unique: true,
 		lowercase: true,
 		trim: true,
 	},
 	password:{
 		type: String,
-		required: [true, "Password is required"],
-		minlength: [6, "Password must be at least 6 characters long"],
+		required: true,
+		minlength: 6,
 	},
 	cartItems: [{
 		quantity:{

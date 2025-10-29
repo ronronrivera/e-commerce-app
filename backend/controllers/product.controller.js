@@ -2,6 +2,7 @@ import Product from "../models/product.model.js";
 import { redis } from "../lib/redis.js";
 import cloudinary from "../lib/cloudinary.js";
 import {updateFeatureProductCached} from "../lib/utils.js"
+import User from "../models/user.model.js";
 
 export const getAllProducts  = async (_, res) =>{
 	try{
@@ -14,35 +15,56 @@ export const getAllProducts  = async (_, res) =>{
 	}
 }
 
-export const getFeaturedProducts = async (_, res) =>{
-	try{
-		let featuredProducts = await redis.get("featured_products");
-		if(featuredProducts){
-			return res.json(JSON.parse(featuredProducts));
-		}
-		
-		//if not in redis, fetch from mongoDB
-		//lean() is gonna return a plain javascript object instead of a mongodb document
-		//which is good performance
-		featuredProducts = await Product.find({isFeatured: true}).lean();
+export const getFeaturedProducts = async (_, res) => {
+    try {
+    	let featuredProducts = await redis.get("featured_products");
+        
+      if (featuredProducts) {
+        try {
+            // Try to parse the cached data
+            const parsedProducts = JSON.parse(featuredProducts);
+            return res.json(parsedProducts);
+        } catch (parseError) {
+            // If parsing fails, log and delete the corrupted cache
+            await redis.del("featured_products");
+            // Continue to fetch from database
+        }
+      }
+        
+      // If not in redis or cache was corrupted, fetch from MongoDB
+      featuredProducts = await Product.find({ isFeatured: true }).lean();
 
-		if(!featuredProducts) return res.status(404).json({message: "No featured products found"});
-		if(!featuredProducts.length) return res.status(404).json({message: "No featured products found"});
-		//store in redis for future quick access
+      if (!featuredProducts || featuredProducts.length === 0) {
+        return res.status(404).json({ message: "No featured products found" });
+      }
 
-		await redis.set("featured_products", JSON.stringify(featuredProducts))
-		
-		res.json(featuredProducts);
-	}
-	catch(error){
-		console.log("Error in geatFeaturedProducts controller: ", error.message);
-		res.status(500).json({message: "Internal server error: ", error: error.message})
-	}
+      // Store in redis for future quick access
+      try {
+          await redis.set("featured_products", JSON.stringify(featuredProducts));
+      } 
+			catch (redisError) {
+        	console.log("Error caching featured products:", redisError.message);
+          // Continue without caching if Redis fails
+      }
+        
+      res.json(featuredProducts);
+    } 
+		catch (error) {   
+			console.log("Error in getFeaturedProducts controller: ", error.message);
+      res.status(500).json({ 
+          message: "Internal server error", 
+          error: error.message 
+      });
+    }
 }
 
 export const createProduct = async(req, res) =>{
 	try{
 		const {name, description, price, image, category} = req.body;
+
+		if(!name || !description || !price || !image || !category){
+			return res.status(400).json({message: "All fields must required"});
+		}
 
 		let cloudinaryResponse = null;
 
@@ -122,7 +144,7 @@ export const getProductsByCategory =  async (req, res) =>{
 	const {category} = req.params;
 	try{
 		const products = await Product.find({category});
-		res.json(products);
+		res.json({products});
 	}
 	catch(error){
 		console.log("Error in getProductsByCategory controller", error.message);
@@ -150,4 +172,16 @@ export const toggleFeatureProduct = async (req, res) =>{
 	}
 }
 
+export const clearCart = async (req, res) =>{
+	try{
+		const user = await User.findById(req.user._id);
+		user.cartItems = [];
+		await user.save();
+
+		res.json({message: "Cart cleared successfully"});
+	}
+	catch(error){
+		res.status(500).json({message: "Error in clearCart controller", error: error});
+	}
+}
 

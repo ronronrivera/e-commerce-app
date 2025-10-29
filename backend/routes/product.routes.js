@@ -4,7 +4,9 @@ import { 	getAllProducts,
 					createProduct, deleteProduct, 
 					getRecommendedProducts, 
 					getProductsByCategory, 
-					toggleFeatureProduct } from "../controllers/product.controller.js";
+					toggleFeatureProduct,
+					clearCart
+					} from "../controllers/product.controller.js";
 
 
 import { protectRoute, adminRoute } from "../middleware/auth.middleware.js";
@@ -20,6 +22,5 @@ router.post("/", protectRoute, adminRoute, createProduct);
 router.patch("/:id", protectRoute, adminRoute, toggleFeatureProduct);
 
 router.delete("/:id", protectRoute, adminRoute, deleteProduct);
-
 
 export default router;
