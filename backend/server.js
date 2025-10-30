@@ -16,7 +16,7 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-const __dirname = path.resolved();
+const __dirname = path.resolve();
 
 app.use(express.json({limit: "10mb"})) //req.body
 app.use(cookieParser());
