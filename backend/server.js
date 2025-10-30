@@ -31,11 +31,6 @@ app.use("/api/analytics", analyticsRoutes);
 if(process.env.NODE_ENV === "production"){
 	app.use(express.static(path.join(__dirname, "/frontend/dist")));
 
-	// Serve index.html for the root route
-	app.get("/", (req, res) => {
-		res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
-	});
-
 	// Serve index.html for all other routes (client-side routing)
 	app.get("*", (req, res) => {
 		res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
