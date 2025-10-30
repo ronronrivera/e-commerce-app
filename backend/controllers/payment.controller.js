@@ -3,10 +3,11 @@ import Order from "../models/order.model.js";
 import { stripe } from "../lib/stripe.js";
 import { createStripeCoupon, createNewCoupon } from "../lib/utils.js";
 import "dotenv/config";
+import User from "../models/user.model.js";
 
-export const createCheckoutSession = async (req, res) =>{
+export const createCheckoutSession = async (req, res) => {
 	try{
-		const {products, couponCode} = req.body;
+		const {products, coupon} = req.body; // Changed from couponCode to coupon
 		
 		if(!Array.isArray(products) || products.length === 0){
 			return res.status(400).json({message: "Invalid or empty products array"});
@@ -15,8 +16,8 @@ export const createCheckoutSession = async (req, res) =>{
 		let totalAmount = 0;
 
 		const lineItems = products.map(product =>{
-			const amount = Math.round(product.price * 100); // stripe use cents apparently
-			totalAmount += amount * product.quantity;
+			const amount = Math.round(product.price * 100);
+			totalAmount += amount * (product.quantity || 1);
 
 			return {
 				price_data:{
@@ -25,32 +26,38 @@ export const createCheckoutSession = async (req, res) =>{
 						name: product.name,
 						images: [product.image],
 					},
-					unit_amout: amount
-				}
+					unit_amount: amount
+				},
+				quantity: product.quantity || 1,
 			}
 		})
 
-		let coupon = null;
+		let stripeCouponId = null;
+		let couponCode = coupon || "";
 
-		if(couponCode){
-			coupon = await Coupon.findOne({coupon: couponCode, userId: req.user._id, isActive});
-			if(coupon){
-				totalAmount -= Math.round(totalAmount * coupon.discountPercentage / 100);
+		if(coupon){
+			// Fixed: added missing variable declaration
+			const foundCoupon = await Coupon.findOne({
+				code: coupon, 
+				userId: req.user._id, 
+				isActive: true // Fixed: added missing variable
+			});
+			
+			if(foundCoupon){
+				stripeCouponId = await createStripeCoupon(foundCoupon.discountPercentage);
+				totalAmount -= Math.round(totalAmount * foundCoupon.discountPercentage / 100);
 			}
 		}
-		const session = await stripe.checkout.sessions.create({
-			payment_method_types: ["card", "paypal"],
+
+		const sessionParams = {
+			payment_method_types: ["card"],
 			line_items: lineItems,
 			mode: "payment",
 			success_url: `${process.env.CLIENT_URL}/purchase-success?session_id={CHECKOUT_SESSION_ID}`,
 			cancel_url: `${process.env.CLIENT_URL}/purchase-cancel`,
-			discounts: coupon? [{
-				coupon: await createStripeCoupon(coupon.discountPercentage)
-			}]:
-			[],
 			metadata:{
-				userId:req.user._id.toString(),
-				couponCode: couponCode || "",
+				userId: req.user._id.toString(),
+				couponCode: couponCode,
 				products: JSON.stringify(
 					products.map((p) => ({
 						id: p._id,
@@ -59,24 +66,34 @@ export const createCheckoutSession = async (req, res) =>{
 					}))
 				)
 			}
-		})
+		};
 
-		if(totalAmount >= 20000 /*200$*/){
+		// Only add discounts if we have a valid coupon
+		if(stripeCouponId){
+			sessionParams.discounts = [{
+				coupon: stripeCouponId
+			}];
+		}
+
+		const session = await stripe.checkout.sessions.create(sessionParams);
+
+		// Create coupon if total is high enough (after discounts)
+		if(totalAmount >= 20000){
 			await createNewCoupon(req.user._id);
 		}
 
-		res.status(200).json({id:session.id, totalAmount: totalAmount / 100 })
+		res.status(200).json({id: session.id, url: session.url, totalAmount: totalAmount / 100 });
 	}
 	catch(error){
 		console.log("Error in createCheckoutSession controller", error.message);
-		res.status(500).json({message: "Internal server error", message: error.message});
+		res.status(500).json({message: "Internal server error", error: error.message});
 	}
 }
 
 export const createCheckoutSuccess = async (req, res) =>{
 	try{
 		const {sessionId} = req.body;
-		const session = await stripe.checkout.session.retrieve(sessionId);
+		const session = await stripe.checkout.sessions.retrieve(sessionId);
 
 		if(session.payment_status === "paid"){
 			if(session.metadata.couponCode){
@@ -100,6 +117,12 @@ export const createCheckoutSuccess = async (req, res) =>{
 		})
 
 		await newOrder.save();
+		
+
+    // Clear user's cart after successful payment
+    const user = await User.findById(req.user._id);
+    user.cartItems = [];
+    await user.save();
 
 		res.status(200).json({
 			success: true,

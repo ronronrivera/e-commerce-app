@@ -7,6 +7,21 @@ import { generateToken, setCookies, storeRefreshToken } from "../lib/utils.js";
 export const signup = async (req, res) =>{
 	try{
 		const {email, password, name} = req.body;
+		
+		if(!name || !password || !email){
+			return res.status(400).json({message: "All fields must be required"});
+		}
+
+		if(password.length < 6){
+			return res.status(400).json({message: "Password must be at least 6 characters"});
+		}
+		//check if email is valid with regex;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+
 		const userExist = await User.findOne({email});
 
 		if(userExist){
@@ -39,6 +54,15 @@ export const login = async (req, res) =>{
 
 	try{
 		const {email, password} = req.body;
+/*		
+		//check if email is valid with regex;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+*/
+
+
 		const user = await User.findOne({email});
 
 		if(user && (await user.comparePassword(password))){
