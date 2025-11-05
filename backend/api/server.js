@@ -1,16 +1,16 @@
 import express from "express";
 import path from "path";
 
-import authRoutes from "./routes/auth.route.js";
-import productsRoutes from "./routes/product.routes.js";
+import authRoutes from "../routes/auth.route.js";
+import productsRoutes from "../routes/product.routes.js";
 
-import { connectDB } from "./lib/db.js";
+import { connectDB } from "../lib/db.js";
 import "dotenv/config"
 import cookieParser from "cookie-parser";
-import cartRoutes from "./routes/cart.route.js"
-import couponsRoutes from "./routes/coupons.route.js"
-import paymentRoutes from "./routes/payment.routes.js";
-import analyticsRoutes from "./routes/analytics.routes.js";
+import cartRoutes from "../routes/cart.route.js"
+import couponsRoutes from "../routes/coupons.route.js"
+import paymentRoutes from "../routes/payment.routes.js";
+import analyticsRoutes from "../routes/analytics.routes.js";
 
 const app = express();
 
@@ -37,6 +37,7 @@ if(process.env.NODE_ENV === "production"){
 	});
 }
 
+/*
 try{
 	await connectDB();
 	app.listen(PORT, () =>{
@@ -47,7 +48,7 @@ catch(error){
 	console.log("Failed to connect to the database", error)
 	process.exit(1);
 }
-
+*/
 /*
 connectDB().then(() =>{
 	app.listen(PORT, () =>{
@@ -58,3 +59,19 @@ connectDB().then(() =>{
 	process.exit(1);
 });
 */
+
+// Connect to database
+connectDB().catch((error) => {
+	console.error("Failed to connect to the database:", error);
+	process.exit(1);
+});
+
+// Start server in development; Vercel will use the exported app
+if (process.env.NODE_ENV !== "production") {
+	app.listen(PORT, () => {
+		console.log(`Server is running on http://localhost:${PORT}/`);
+	});
+}
+
+// Export for Vercel serverless
+export default app;
