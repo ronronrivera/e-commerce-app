@@ -37,7 +37,6 @@ if(process.env.NODE_ENV === "production"){
 	});
 }
 
-connectDB();
 /*
 try{
 	await connectDB();
@@ -60,3 +59,19 @@ connectDB().then(() =>{
 	process.exit(1);
 });
 */
+
+// Connect to database
+connectDB().catch((error) => {
+	console.error("Failed to connect to the database:", error);
+	process.exit(1);
+});
+
+// Start server in development; Vercel will use the exported app
+if (process.env.NODE_ENV !== "production") {
+	app.listen(PORT, () => {
+		console.log(`Server is running on http://localhost:${PORT}/`);
+	});
+}
+
+// Export for Vercel serverless
+export default app;

@@ -6,6 +6,7 @@
   "homepage": ".",
   "scripts": {
     "dev": "vite",
+    "lint": "eslint .",
     "build": "vite build",
     "preview": "vite preview"
   },
