@@ -7,17 +7,20 @@
     {
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "frontend/dist" }
+      "config": { 
+        "distDir": "dist",
+        "buildCommand": "cd frontend && npm run build"
+      }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/api/server.js"
+      "dest": "/backend/api/server.js"
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/dist/index.html"
+      "dest": "/frontend/dist/$1"
     }
   ]
 }
