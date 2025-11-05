@@ -1,3 +1,4 @@
+
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -15,10 +16,8 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
-      input: {
-        main: './index.html'
-      }
+      input: './index.html'
     }
   },
-  base: './'
+  base: '/'  // ✅ required for production on Vercel
 })
