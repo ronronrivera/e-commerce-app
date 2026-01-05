@@ -12,8 +12,6 @@ import couponsRoutes from "../routes/coupons.route.js"
 import paymentRoutes from "../routes/payment.routes.js";
 import analyticsRoutes from "../routes/analytics.routes.js";
 
-connectDB();
-
 const app = express();
 
 const PORT = process.env.PORT || 3000;
@@ -31,6 +29,9 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
 if(process.env.NODE_ENV === "production"){
+	app.listen(PORT, () => {
+		console.log(`Server is running on http://localhost:${PORT}/`);
+	});
 	app.use(express.static(path.join(__dirname, "/frontend/dist")));
 
 	// Serve index.html for all other routes (client-side routing)
@@ -38,29 +39,7 @@ if(process.env.NODE_ENV === "production"){
 		res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
 	});
 }
-/*
-try{
-	await connectDB();
-	app.listen(PORT, () =>{
-		console.log(`Server is running on http://localhost:${PORT}/`)
-	})
-}
-catch(error){
-	console.log("Failed to connect to the database", error)
-	process.exit(1);
-}
-<<<<<<< HEAD
-*/
-/*
-connectDB().then(() =>{
-	app.listen(PORT, () =>{
-		console.log(`Server is running on http://localhost:${PORT}/`)
-	});
-}).catch((error) =>{
-	console.error("Failed to connect to the database: ", error);
-	process.exit(1);
-});
-*/
+
 
 // Connect to database
 connectDB().catch((error) => {
